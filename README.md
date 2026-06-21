@@ -4,13 +4,6 @@ Analyse de la surface d'attaque et **durcissement** d'une machine **Metasploitab
 (Ubuntu 8.04) hébergeant deux applications web volontairement vulnérables — **DVWA**
 et **Mutillidae** — qui doivent rester fonctionnelles.
 
-> ⚠️ **Cadre pédagogique.** Metasploitable 2 est une VM *délibérément vulnérable*,
-> à n'utiliser qu'en **réseau isolé** (Host-only / NAT). Les mots de passe de ce
-> dépôt sont des **placeholders** (`<MDP_DVWA>`, `<MDP_MUTILLIDAE>`, `<MDP_ROOT>`).
-> L'objectif n'est pas de « corriger toutes les failles » (impossible : OS en fin de
-> vie, applis vulnérables par conception) mais de **réduire la surface d'attaque** et
-> **durcir le système** de façon cohérente avec son rôle.
-
 ## Contexte technique
 - Ubuntu 8.04 : **SysVinit** + **xinetd/inetd** (`service`, `update-rc.d`, `/etc/xinetd.d`, `/etc/inetd.conf` — pas de `systemd`)
 - Pare-feu **iptables** (noyau trop ancien pour `nftables`)
@@ -127,7 +120,6 @@ sequenceDiagram
 ```
 
 ## Auteur
-[Votre Prénom NOM] — TP3 Sécurité des OS et des réseaux
+[Remir Raian] — TP3 Sécurité des OS et des réseaux
 
-## Licence
-[MIT](LICENSE)
+
