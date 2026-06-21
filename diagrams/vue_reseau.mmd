@@ -1,0 +1,25 @@
+%% Vue réseau — exposition AVANT / APRÈS durcissement (Metasploitable 2)
+flowchart LR
+    classDef open fill:#f3d2d2,stroke:#b71c1c,color:#3a0000;
+    classDef keep fill:#cfe8cf,stroke:#2e7d32,color:#1b3a1b;
+    classDef local fill:#f3ead2,stroke:#8a6d00,color:#3a2f00;
+    classDef filt fill:#cfe0f3,stroke:#1565c0,color:#0d2a4a;
+
+    NET(("Réseau")):::filt
+
+    subgraph BEFORE["AVANT — ~25 ports (dont 5 backdoors)"]
+        BA["21 22 23 25 53 69 80 111 139 445
+        512 513 514 1099 1524 2049 2121
+        3306 3632 5432 5900 6000 6667
+        6697 8009 8180 8787 ..."]:::open
+    end
+
+    subgraph AFTER["APRÈS — surface minimale"]
+        A80["80/tcp Apache — ouvert (métier)"]:::keep
+        A22["22/tcp SSH — filtré (192.168.58.0/24)"]:::filt
+        A3306["3306/tcp MySQL — 127.0.0.1 uniquement"]:::local
+        AX["tous les autres ports — fermés / DROP"]:::keep
+    end
+
+    NET --> BEFORE
+    NET -->|"iptables : politique DROP"| AFTER
