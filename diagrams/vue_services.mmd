@@ -4,13 +4,13 @@ flowchart TB
     classDef drop fill:#f3d2d2,stroke:#b71c1c,color:#3a0000;
     classDef back fill:#7a1f1f,stroke:#3a0000,color:#ffffff;
 
-    subgraph NEED["✅ NÉCESSAIRES (conserver + durcir)"]
+    subgraph NEED["NÉCESSAIRES (conserver + durcir)"]
         S22["SSH 22 — administration"]:::keep
         S80["Apache/PHP 80 — DVWA + Mutillidae"]:::keep
         S3306["MySQL 3306 — à restreindre en 127.0.0.1"]:::keep
     end
 
-    subgraph BACK["☠️ BACKDOORS (supprimer en priorité)"]
+    subgraph BACK["BACKDOORS (supprimer en priorité)"]
         ING["ingreslock 1524 — shell root"]:::back
         IRC["UnrealIRCd 6667/6697"]:::back
         RMI["Java RMI 1099"]:::back
@@ -18,7 +18,7 @@ flowchart TB
         VS["vsftpd 2.3.4 — port 21"]:::back
     end
 
-    subgraph USELESS["❌ INUTILES (désactiver / supprimer)"]
+    subgraph USELESS["INUTILES (désactiver / supprimer)"]
         TEL["Telnet 23 / r-services 512-514"]:::drop
         SMB["Samba 139/445/137/138"]:::drop
         NFS["NFS 2049 / portmap 111"]:::drop
