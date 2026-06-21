@@ -1,0 +1,18 @@
+%% Flux d'une requête après durcissement (Metasploitable 2)
+sequenceDiagram
+    autonumber
+    participant C as Client / Admin
+    participant FW as iptables (policy DROP)
+    participant A as Apache + PHP (80)
+    participant APP as DVWA / Mutillidae
+    participant DB as MySQL (127.0.0.1:3306)
+
+    C->>FW: HTTP vers 80  /  SSH vers 22
+    Note over FW: Autorisés : 80 (tous),<br/>22 (192.168.58.0/24), established, lo<br/>Tout le reste : DROP
+    FW->>A: Requête HTTP autorisée (80)
+    A->>APP: Exécution du code PHP
+    APP->>DB: Requête SQL en local (comptes dédiés dvwa / mutillidae)
+    DB-->>APP: Résultats
+    APP-->>A: Page HTML
+    A-->>C: Réponse HTTP
+    Note over DB: MySQL non exposé au réseau<br/>(écoute 127.0.0.1 uniquement)
