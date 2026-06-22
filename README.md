@@ -133,8 +133,5 @@ sequenceDiagram
 
 ## Auteur
 
-Prénom NOM — TP3 Sécurité des OS et des réseaux
+Raian Remir — TP3 Sécurité des OS et des réseaux
 
-## Licence
-
-[MIT](LICENSE)
