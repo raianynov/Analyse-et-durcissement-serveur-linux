@@ -1,42 +1,54 @@
 # TP3 — Durcissement d'un serveur Linux (Metasploitable 2)
 
-Analyse de la surface d'attaque et **durcissement** d'une machine **Metasploitable 2**
-(Ubuntu 8.04) hébergeant deux applications web volontairement vulnérables — **DVWA**
-et **Mutillidae** — qui doivent rester fonctionnelles.
+Analyse de la surface d'attaque et durcissement d'une machine Metasploitable 2
+(Ubuntu 8.04) hébergeant deux applications web volontairement vulnérables, DVWA et
+Mutillidae, qui doivent rester fonctionnelles.
+
+La machine étant délibérément vulnérable et hébergeant des backdoors actives, elle
+ne doit être utilisée que sur un réseau isolé (Host-only ou NAT). Les mots de passe
+de ce dépôt sont des placeholders. L'objectif n'est pas de corriger l'ensemble des
+vulnérabilités, ce qui n'est ni possible (système en fin de vie, applications
+vulnérables par conception) ni demandé, mais de réduire la surface d'attaque et de
+durcir le système en cohérence avec son rôle.
 
 ## Contexte technique
-- Ubuntu 8.04 : **SysVinit** + **xinetd/inetd** (`service`, `update-rc.d`, `/etc/xinetd.d`, `/etc/inetd.conf` — pas de `systemd`)
-- Pare-feu **iptables** (noyau trop ancien pour `nftables`)
-- Énumération via `netstat -tulpn`, `ifconfig`
-- Dépôts APT fermés → composants **non patchables** → migration recommandée en correction de fond
+
+Ubuntu 8.04 fonctionne avec SysVinit, xinetd et inetd (service, update-rc.d,
+/etc/xinetd.d, /etc/inetd.conf). Le pare-feu repose sur iptables, le noyau étant
+antérieur à nftables. L'énumération s'effectue avec netstat et ifconfig. Les dépôts
+APT étant fermés, les composants ne sont pas corrigeables ; la migration vers un
+système supporté constitue la correction de fond.
 
 ## Structure du dépôt
+
 | Fichier | Description |
 |---|---|
-| [`01_analyse.md`](01_analyse.md) | Cartographie du système + analyse de la surface d'attaque |
-| [`02_plan_durcissement.md`](02_plan_durcissement.md) | Plan de durcissement (état initial / modification / état final + preuves) |
-| [`diagrams/`](diagrams/) | Diagrammes Mermaid (`.mmd`) |
+| [01_analyse.md](01_analyse.md) | Cartographie du système et analyse de la surface d'attaque |
+| [02_plan_durcissement.md](02_plan_durcissement.md) | Plan de durcissement (état initial, mesures, vérification, état final) |
+| [diagrams/](diagrams/) | Sources Mermaid des schémas |
 
 ## Mesures appliquées
-| # | Mesure | Impact métier |
+
+| Thème | Mesure | Impact métier |
 |---|---|---|
 | 1 | Neutralisation des backdoors (ingreslock, UnrealIRCd, RMI, DRb, vsftpd) | aucun |
 | 2 | Suppression des services inutiles (Samba, NFS, BIND, PostgreSQL, Tomcat, distccd, ProFTPD, Postfix) | aucun |
 | 3 | MySQL restreint à l'écoute locale (127.0.0.1) | aucun |
-| 4 | SSH par clé, root interdit, SSHv2 | admin par clé |
-| 5 | Pare-feu iptables : politique DROP (80 + 22 restreint) | aucun |
+| 4 | SSH par clé, root interdit, SSHv2 | administration par clé |
+| 5 | Pare-feu iptables, politique DROP (80 et 22 restreint) | aucun |
 | 6 | Mot de passe par défaut changé, comptes faibles verrouillés | aucun |
-| 7 | Apache + MySQL durcis, comptes applicatifs dédiés | applis préservées |
-| 8 | `/tmp` durci (noexec/nosuid/nodev), droits sensibles restreints | aucun |
+| 7 | Apache et MySQL durcis, comptes applicatifs dédiés | applications préservées |
+| 8 | /tmp durci, droits sensibles restreints | aucun |
 
-**Résultat : de ~25 services exposés (dont 5 backdoors root) à 3 services nécessaires durcis**, DVWA et Mutillidae restant fonctionnelles.
+La surface d'attaque passe d'environ vingt-cinq services exposés, dont cinq
+backdoors root, à trois services nécessaires durcis, DVWA et Mutillidae restant
+fonctionnelles.
 
 ## Schémas
 
-Les diagrammes ci-dessous sont rendus automatiquement par GitHub. Les sources
-éditables sont dans [`diagrams/`](diagrams/).
+Les sources éditables sont dans le dossier [diagrams/](diagrams/).
 
-### Services : nécessaires / inutiles / backdoors
+### Services necessaires, inutiles et backdoors
 
 ```mermaid
 flowchart TB
@@ -44,21 +56,21 @@ flowchart TB
     classDef drop fill:#f3d2d2,stroke:#b71c1c,color:#3a0000;
     classDef back fill:#7a1f1f,stroke:#3a0000,color:#ffffff;
 
-    subgraph NEED["✅ NÉCESSAIRES (conserver + durcir)"]
-        S22["SSH 22 — administration"]:::keep
-        S80["Apache/PHP 80 — DVWA + Mutillidae"]:::keep
-        S3306["MySQL 3306 — à restreindre en 127.0.0.1"]:::keep
+    subgraph NEED["Necessaires (conserver et durcir)"]
+        S22["SSH 22 - administration"]:::keep
+        S80["Apache/PHP 80 - DVWA + Mutillidae"]:::keep
+        S3306["MySQL 3306 - a restreindre en 127.0.0.1"]:::keep
     end
 
-    subgraph BACK["☠️ BACKDOORS (supprimer en priorité)"]
-        ING["ingreslock 1524 — shell root"]:::back
+    subgraph BACK["Backdoors (supprimer en priorite)"]
+        ING["ingreslock 1524 - shell root"]:::back
         IRC["UnrealIRCd 6667/6697"]:::back
         RMI["Java RMI 1099"]:::back
         DRB["Ruby DRb 8787"]:::back
-        VS["vsftpd 2.3.4 — port 21"]:::back
+        VS["vsftpd 2.3.4 - port 21"]:::back
     end
 
-    subgraph USELESS["❌ INUTILES (désactiver / supprimer)"]
+    subgraph USELESS["Inutiles (desactiver / supprimer)"]
         TEL["Telnet 23 / r-services 512-514"]:::drop
         SMB["Samba 139/445/137/138"]:::drop
         NFS["NFS 2049 / portmap 111"]:::drop
@@ -68,7 +80,7 @@ flowchart TB
     end
 ```
 
-### Réseau : ports exposés avant / après
+### Ports exposes avant et apres durcissement
 
 ```mermaid
 flowchart LR
@@ -97,7 +109,7 @@ flowchart LR
     NET -->|"iptables : politique DROP"| AFTER
 ```
 
-### Flux d'une requête après durcissement
+### Flux d'une requete apres durcissement
 
 ```mermaid
 sequenceDiagram
@@ -120,6 +132,9 @@ sequenceDiagram
 ```
 
 ## Auteur
-[Remir Raian] — TP3 Sécurité des OS et des réseaux
 
+Prénom NOM — TP3 Sécurité des OS et des réseaux
 
+## Licence
+
+[MIT](LICENSE)
