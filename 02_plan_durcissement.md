@@ -91,16 +91,30 @@ DVWA et Mutillidae restent fonctionnelles (connexion MySQL locale).
 **État initial.** `PermitRootLogin yes` et authentification par mot de passe
 autorisée. OpenSSH 4.7 n'accepte que les algorithmes ssh-rsa et ssh-dss.
 
-**Mesures.** Une clé RSA est générée sur le poste d'administration (ed25519 non
-supporté par OpenSSH 4.7) et déposée dans `~/.ssh/authorized_keys`. La configuration
-serveur est réécrite par suppression des directives existantes puis ajout d'un bloc
-unique (sed -r, requis sur Ubuntu 8.04).
+**Mesures.**
+Une clé RSA est générée sur le poste d'administration (ed25519 non
+supporté par OpenSSH 4.7) et déposée dans `~/.ssh/authorized_keys`. 
+
+Génération de la clé sur le poste Administrateur : 
+
+```bash
+ssh-keygen -t rsa -b 2048 -f ~/.ssh/id_rsa_metasploitable
+```
+
+Envoie de la paire de clé vers la machine virtuelle :
+
+```bash
+ssh-copy-id -o HostKeyAlgorithms=+ssh-rsa -i ~/.ssh/id_rsa_metasploitable.pub msfadmin@192.168.58.128
+```
+
+La configuration serveur est réécrite par suppression des directives existantes puis ajout d'un bloc unique (sed -r, requis sur Ubuntu 8.04).
 ```bash
 sudo cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak
 sudo sed -i -r '/^[[:space:]]*#?[[:space:]]*(Protocol|PermitRootLogin|PasswordAuthentication|PermitEmptyPasswords|PubkeyAuthentication)\b/d' /etc/ssh/sshd_config
 printf '\nProtocol 2\nPermitRootLogin no\nPasswordAuthentication no\nPermitEmptyPasswords no\nPubkeyAuthentication yes\n' | sudo tee -a /etc/ssh/sshd_config
 sudo /etc/init.d/ssh restart
 ```
+
 
 **Vérification.**
 ```
