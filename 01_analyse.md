@@ -1,112 +1,107 @@
-# Partie 1 — Analyse du système existant (Metasploitable 2)
+# Partie 1 — Analyse du système
 
-## 1. Fonction métier du serveur
+## 1. Fonction métier
 
-Machine **Metasploitable 2** (Ubuntu 8.04 « Hardy Heron ») hébergeant deux
-applications web vulnérables à vocation pédagogique — **DVWA** et **Mutillidae** —
-servies par Apache et adossées à une base **MySQL**. Sa fonction métier se limite à
-**servir ces applications web (HTTP/PHP + base de données)** et à permettre son
-**administration** (SSH).
-
-Tout composant ne contribuant pas à ce rôle constitue une **surface d'attaque
-inutile**. Metasploitable 2 étant délibérément vulnérable, elle expose en outre
-plusieurs **portes dérobées (backdoors)** et services obsolètes.
+La machine Metasploitable 2 (Ubuntu 8.04) héberge deux applications web vulnérables
+à vocation pédagogique, DVWA et Mutillidae, servies par Apache et adossées à une
+base MySQL. La fonction du serveur se limite à servir ces applications (HTTP/PHP et
+base de données) et à permettre son administration (SSH). Tout composant ne
+contribuant pas à ce rôle constitue une surface d'attaque inutile.
 
 ## 2. Identification du système
-| Élément | Valeur observée |
+
+| Élément | Valeur |
 |---|---|
 | Distribution | Ubuntu 8.04 LTS (Hardy Heron) |
 | Noyau | Linux 2.6.x |
-| Init | **SysVinit** (`/etc/init.d`, `/etc/rc*.d`) + **xinetd** + **inetd** |
-| Gestion de paquets | APT / dpkg (dépôts fermés — non patchable) |
-| Serveur web | Apache 2.2.8 + PHP |
+| Système d'init | SysVinit, complété par xinetd et inetd |
+| Serveur web | Apache 2.2.8 avec PHP 5.2 |
 | Base de données | MySQL 5.0.51a |
-| Accès distant | OpenSSH 4.7p1 (n'accepte que `ssh-rsa`/`ssh-dss` — algorithmes obsolètes) |
+| Accès distant | OpenSSH 4.7p1 |
 | Adresse IP | 192.168.58.128/24 |
-| Compte d'administration | `msfadmin` (mot de passe par défaut) |
+| Compte d'administration | msfadmin |
 
 ## 3. Cartographie des ports et services
 
-Relevé réel (`sudo netstat -tulpn`). Rôle vis-à-vis du métier :
-✅ nécessaire · ⚠️ nécessaire mais à restreindre · ❌ inutile · ☠️ **backdoor**.
+Relevé obtenu par `sudo netstat -tulpn`. La colonne Rôle qualifie chaque composant
+au regard de la fonction métier.
 
-| Port(s) | Service | Programme | Rôle |
+| Port | Service | Programme | Rôle |
 |---|---|---|---|
-| 21 | FTP | xinetd | ❌ (FTP inutile ; versions Metasploitable connues vulnérables) |
-| 22 | SSH | sshd | ✅ **Nécessaire** (administration) — à durcir |
-| 23 | Telnet | xinetd | ❌ Protocole en clair |
-| 25 | SMTP | Postfix (master) | ❌ Pas de rôle mail |
-| 53 | DNS | named (BIND 9) | ❌ Pas de rôle DNS |
-| 69/udp | TFTP | xinetd | ❌ Transfert sans authentification |
-| 80 | HTTP | apache2 | ✅ **Nécessaire** (DVWA + Mutillidae) |
-| 111 | RPC portmapper | portmap | ❌ Dépendance NFS |
-| 139 / 445 | SMB | smbd / nmbd | ☠️ Samba 3.x (CVE-2007-2447, RCE « username map script ») |
-| 137 / 138 udp | NetBIOS | nmbd | ❌ Inutile |
-| 512 / 513 / 514 | rexec / rlogin / rsh | xinetd | ❌ r-services (auth faible, en clair) |
-| 1099 / 39631 | Java RMI | rmiregistry | ☠️ RMI registry (exécution de code distante) |
-| 1524 | ingreslock | xinetd | ☠️ **Backdoor shell root** |
-| 2049 / 111 / mountd / statd | NFS / RPC | nfsd, rpc.mountd, rpc.statd | ❌ Partage réseau (souvent `no_root_squash`) |
-| 2121 | FTP | ProFTPD 1.3.1 | ❌ Second service FTP |
-| 3306 | MySQL | mysqld | ⚠️ **Nécessaire** mais **exposé sur `0.0.0.0`** → à restreindre au local |
-| 3632 | distcc | distccd | ☠️ CVE-2004-2687 (exécution de code distante) |
-| 5432 | PostgreSQL | postgres | ❌ Les applis utilisent MySQL |
-| 5900 | VNC | Xtightvnc | ☠️ Bureau distant, mot de passe faible |
-| 6000 | X11 | Xtightvnc | ❌ Affichage distant exposé |
-| 6667 / 6697 | IRC | UnrealIRCd | ☠️ **Backdoor** (CVE-2010-2075) |
-| 8009 / 8180 | AJP / HTTP | Tomcat (jsvc) | ☠️ Tomcat manager (identifiants faibles → RCE) |
-| 8787 | DRb (Ruby distribué) | ruby | ☠️ Exécution de code distante |
-| 953 / 639 (local) | rndc / statd | named / rpc.statd | ❌ Contrôle local / RPC |
+| 21 | FTP | xinetd (vsftpd 2.3.4) | Backdoor (CVE-2011-2523) |
+| 22 | SSH | sshd | Nécessaire |
+| 23 | Telnet | xinetd | Inutile (protocole en clair) |
+| 25 | SMTP | Postfix | Inutile |
+| 53 | DNS | named (BIND 9) | Inutile |
+| 69 | TFTP | xinetd | Inutile |
+| 80 | HTTP | apache2 | Nécessaire |
+| 111 | RPC portmapper | portmap | Inutile (dépendance NFS) |
+| 139, 445 | SMB | smbd, nmbd | Inutile (CVE-2007-2447) |
+| 512, 513, 514 | rexec, rlogin, rsh | xinetd | Inutile (auth faible, en clair) |
+| 1099 | Java RMI | rmiregistry | Backdoor (exécution de code distante) |
+| 1524 | ingreslock | xinetd | Backdoor (shell root sans authentification) |
+| 2049 | NFS | nfsd | Inutile |
+| 2121 | FTP | ProFTPD 1.3.1 | Inutile |
+| 3306 | MySQL | mysqld | Nécessaire, à restreindre à l'écoute locale |
+| 3632 | distcc | distccd | Backdoor (CVE-2004-2687) |
+| 5432 | PostgreSQL | postgres | Inutile |
+| 5900 | VNC | Xtightvnc | Backdoor (mot de passe faible) |
+| 6000 | X11 | Xtightvnc | Inutile |
+| 6667, 6697 | IRC | UnrealIRCd | Backdoor (CVE-2010-2075) |
+| 8009, 8180 | AJP, HTTP | Tomcat | Inutile |
+| 8787 | DRb | ruby | Backdoor (exécution de code distante) |
 
 ## 4. Dépendances de DVWA et Mutillidae
 
+Les deux applications partagent la même pile technique.
+
 ```
 Navigateur (HTTP/80)
-      │
-      ▼
-Apache 2.2.8 ──charge──► PHP ──interprète──► /var/www/dvwa , /var/www/mutillidae
-      │                                              │
-      │                              requêtes SQL (localhost)
-      ▼                                              ▼
-                                          MySQL 5.0.51a
+   -> Apache 2.2.8 + PHP
+      -> /var/www/dvwa, /var/www/mutillidae
+         -> MySQL 5.0.51a (local)
 ```
 
-**Flux strictement nécessaires :**
-1. **Entrant** : client → `80/tcp` (Apache) — seul flux entrant métier.
-2. **Interne** : Apache/PHP → MySQL. Cette liaison peut se faire en **local**.
-   Or MySQL écoute actuellement sur **`0.0.0.0:3306`** (exposé au réseau) alors
-   qu'une écoute locale (`127.0.0.1`) suffirait → exposition inutile à corriger.
-3. **Administration** : admin → `22/tcp` (SSH), à restreindre à un réseau de confiance.
+Flux nécessaires au fonctionnement :
 
-**Composants à conserver :** Apache (80), MySQL (à rendre local), SSH (22).
+1. Entrant : client vers le port 80 (Apache). Seul flux entrant métier.
+2. Interne : Apache et PHP vers MySQL, en local. La base n'a pas besoin d'être
+   exposée au réseau ; elle écoute pourtant initialement sur 0.0.0.0:3306.
+3. Administration : administrateur vers le port 22 (SSH), à restreindre à un
+   réseau de confiance.
+
+Composants à conserver : Apache (80), MySQL (à restreindre au local), SSH (22).
 
 ## 5. Analyse de la surface d'attaque
 
-### 5.1 Ce qui doit être protégé
-- **Apache + PHP (80)** : unique porte d'entrée légitime.
-- **MySQL (3306)** : données des applications → **à restreindre à l'écoute locale**.
-- **SSH (22)** : administration → clés, root interdit, filtrage, algorithmes modernes.
+### 5.1 Éléments à protéger
 
-### 5.2 Ce qui est inutile / dangereux (à éliminer)
+Apache et PHP (port 80), unique porte d'entrée métier ; MySQL (port 3306), données
+des applications, à restreindre à l'écoute locale ; SSH (port 22), canal
+d'administration, à durcir.
 
-| Famille | Services / ports | Risque |
+### 5.2 Éléments à éliminer
+
+| Famille | Services | Risque principal |
 |---|---|---|
-| ☠️ **Backdoors directes** | ingreslock 1524, UnrealIRCd 6667/6697, FTP piégé 21 | Shell root immédiat |
-| ☠️ **Exécution de code distante** | distccd 3632, Java RMI 1099, DRb 8787, Tomcat 8180/8009, Samba 139/445 | RCE non authentifiée |
-| **Protocoles en clair / auth faible** | Telnet 23, r-services 512-514, VNC 5900, TFTP 69 | Vol d'identifiants, MITM |
-| **Partage réseau non requis** | Samba 139/445/137/138, NFS 2049, portmap 111 | Accès fichiers, mouvement latéral |
-| **Services hors périmètre** | SMTP 25, DNS 53, PostgreSQL 5432, ProFTPD 2121, X11 6000 | Surface et CVE inutiles |
+| Backdoors | ingreslock 1524, UnrealIRCd 6667/6697, FTP 21, distccd 3632, Java RMI 1099, DRb 8787 | Accès root direct, exécution de code distante |
+| Protocoles en clair, auth faible | Telnet 23, rexec/rlogin/rsh 512-514, VNC 5900, TFTP 69 | Vol d'identifiants, interception |
+| Partage réseau non requis | Samba 139/445/137/138, NFS 2049, portmap 111 | Accès fichiers, mouvement latéral |
+| Hors périmètre | SMTP 25, DNS 53, PostgreSQL 5432, ProFTPD 2121, X11 6000, Tomcat 8009/8180 | Surface et vulnérabilités inutiles |
 
 ### 5.3 Synthèse
-> Sur ~25 ports ouverts, **3 services seulement sont nécessaires** (22, 80, et
-> 3306 à rendre local). Le durcissement consiste donc d'abord à **neutraliser les
-> backdoors**, puis à **supprimer tous les services inutiles**, à **restreindre
-> MySQL au local**, et enfin à durcir SSH, le pare-feu et le moindre privilège —
-> en gardant DVWA et Mutillidae fonctionnels.
 
-### 5.4 Périmètre réaliste (important)
-Metasploitable 2 (Ubuntu 8.04) est **en fin de vie** : ses dépôts APT sont fermés,
-donc Apache/PHP/MySQL **ne sont pas patchables**. « Supprimer toutes les failles »
-n'est ni l'objet du TP (DVWA et Mutillidae doivent rester vulnérables et
-fonctionnelles) ni atteignable. L'objectif est la **réduction de la surface
-d'attaque** et le **durcissement cohérent** ; la correction de fond des versions
-relèverait d'une **migration**, à recommander dans le plan.
+Sur environ vingt-cinq ports ouverts, trois services seulement sont nécessaires :
+22, 80 et 3306 (à restreindre au local). Le durcissement consiste à neutraliser les
+backdoors, supprimer les services inutiles, restreindre MySQL à l'écoute locale,
+puis durcir SSH, le pare-feu, les privilèges et le système de fichiers, en
+préservant le fonctionnement de DVWA et Mutillidae.
+
+## 6. Périmètre et limites
+
+Metasploitable 2 repose sur Ubuntu 8.04, en fin de vie : les dépôts APT sont fermés
+et les composants (Apache, PHP, MySQL) ne sont pas corrigeables. La suppression de
+l'ensemble des vulnérabilités n'est pas l'objet de ce travail, puisque DVWA et
+Mutillidae doivent rester vulnérables et fonctionnelles, et n'est pas atteignable
+sur cette base. La correction de fond des versions relève d'une migration vers un
+système supporté, qui constitue la recommandation principale.
