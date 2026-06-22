@@ -95,12 +95,6 @@ autorisée. OpenSSH 4.7 n'accepte que les algorithmes ssh-rsa et ssh-dss.
 Une clé RSA est générée sur le poste d'administration (ed25519 non
 supporté par OpenSSH 4.7) et déposée dans `~/.ssh/authorized_keys`. 
 
-Création du fichier ssh qur le poste admin : 
-
-```bash
-
-```
-
 Génération de la clé sur le poste Administrateur : 
 
 ```bash
