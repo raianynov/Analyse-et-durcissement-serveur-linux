@@ -5,7 +5,7 @@ Chaque mesure suit la structure : état initial, mesures appliquées, vérificat
 xinetd et inetd, iptables). Avant toute action, un instantané de la machine virtuelle
 est réalisé ; après chaque étape, le fonctionnement de DVWA et de Mutillidae est
 contrôlé. L'accès s'effectue par `ssh -o HostKeyAlgorithms=+ssh-rsa msfadmin@192.168.58.128`
-ou par la console de la machine virtuelle. Les mots de passe indiqués sont des placeholders (<MDP_DVWA>, <MDP_MUTILLIDAE>, <MDP_ROOT>) à remplacer par des mots de passe forts, sans le caractère "!".
+ou par la console de la machine virtuelle.
 
 ## Thème 1 — Neutralisation des backdoors
 
@@ -92,29 +92,39 @@ DVWA et Mutillidae restent fonctionnelles (connexion MySQL locale).
 autorisée. OpenSSH 4.7 n'accepte que les algorithmes ssh-rsa et ssh-dss.
 
 **Mesures.**
-Une clé RSA est générée sur le poste d'administration (ed25519 non
-supporté par OpenSSH 4.7) et déposée dans `~/.ssh/authorized_keys`. 
 
-Génération de la clé sur le poste Administrateur : 
-
-```bash
-ssh-keygen -t rsa -b 2048 -f "$HOME\.ssh\id_rsa_metasploitable"
+Génération de la paire de clés sur le poste d'administration Windows (ed25519 non
+supporté par OpenSSH 4.7, on utilise RSA) :
+```powershell
+ssh-keygen -t rsa -b 2048 -f $env:USERPROFILE\.ssh\msf_rsa
 ```
 
-Envoie de la paire de clé vers le serveur virtuelle (modifier l'ip avec celui de votre serveur) :
-
-```bash
-cat "$HOME\.ssh\id_rsa_metasploitable.pub" | ssh -o HostKeyAlgorithms=+ssh-rsa msfadmin@192.168.58.128 "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys && chmod 700 ~/.ssh && chmod 600 ~/.ssh/authorized_keys"
+Raccourci de connexion dans `%USERPROFILE%\.ssh\config` :
+```
+Host msf
+    HostName 192.168.58.128
+    User msfadmin
+    HostKeyAlgorithms +ssh-rsa
+    PubkeyAcceptedAlgorithms +ssh-rsa
+    IdentityFile ~/.ssh/msf_rsa
 ```
 
-La configuration serveur est réécrite par suppression des directives existantes puis ajout d'un bloc unique (sed -r, requis sur Ubuntu 8.04).
+Dépôt de la clé publique sur la VM (authentification par mot de passe, une
+dernière fois) :
+```powershell
+type $env:USERPROFILE\.ssh\msf_rsa.pub | ssh msf "mkdir -p ~/.ssh && chmod 700 ~/.ssh && cat >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys"
+```
+
+La connexion par clé est testée et validée avant de modifier la configuration
+serveur. La configuration est réécrite par suppression des directives existantes
+puis ajout d'un bloc unique (sed -r requis sur Ubuntu 8.04, qui ne reconnaît pas
+sed -E) :
 ```bash
 sudo cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak
 sudo sed -i -r '/^[[:space:]]*#?[[:space:]]*(Protocol|PermitRootLogin|PasswordAuthentication|PermitEmptyPasswords|PubkeyAuthentication)\b/d' /etc/ssh/sshd_config
 printf '\nProtocol 2\nPermitRootLogin no\nPasswordAuthentication no\nPermitEmptyPasswords no\nPubkeyAuthentication yes\n' | sudo tee -a /etc/ssh/sshd_config
 sudo /etc/init.d/ssh restart
 ```
-
 
 **Vérification.**
 ```
@@ -230,18 +240,18 @@ repointées avant la sécurisation de root. Sur Metasploitable, root est défini
 root@'%' : le mot de passe est modifié par UPDATE puis l'hôte restreint à local.
 ```bash
 mysql -u root << 'SQL'
-GRANT ALL PRIVILEGES ON dvwa.* TO 'dvwa'@'localhost' IDENTIFIED BY '<MDP_DVWA>';
-GRANT ALL PRIVILEGES ON metasploit.* TO 'mutillidae'@'localhost' IDENTIFIED BY '<MDP_MUTILLIDAE>';
+GRANT ALL PRIVILEGES ON dvwa.* TO 'dvwa'@'localhost' IDENTIFIED BY 'Dvwa2026Secure';
+GRANT ALL PRIVILEGES ON metasploit.* TO 'mutillidae'@'localhost' IDENTIFIED BY 'Muti2026Secure';
 FLUSH PRIVILEGES;
 SQL
 
 sudo sed -i "s/\$_DVWA\[ 'db_user' \] *= *'root'/\$_DVWA[ 'db_user' ] = 'dvwa'/" /var/www/dvwa/config/config.inc.php
-sudo sed -i "s/\$_DVWA\[ 'db_password' \] *= *''/\$_DVWA[ 'db_password' ] = '<MDP_DVWA>'/" /var/www/dvwa/config/config.inc.php
+sudo sed -i "s/\$_DVWA\[ 'db_password' \] *= *''/\$_DVWA[ 'db_password' ] = 'Dvwa2026Secure'/" /var/www/dvwa/config/config.inc.php
 sudo sed -i "s/\$dbuser *= *'root'/\$dbuser = 'mutillidae'/" /var/www/mutillidae/config.inc
-sudo sed -i "s/\$dbpass *= *''/\$dbpass = '<MDP_MUTILLIDAE>'/" /var/www/mutillidae/config.inc
+sudo sed -i "s/\$dbpass *= *''/\$dbpass = 'Muti2026Secure'/" /var/www/mutillidae/config.inc
 
 mysql -u root << 'SQL'
-UPDATE mysql.user SET Password=PASSWORD('<MDP_ROOT>') WHERE User='root';
+UPDATE mysql.user SET Password=PASSWORD('RootStrong2026') WHERE User='root';
 UPDATE mysql.user SET Host='localhost' WHERE User='root' AND Host='%';
 DELETE FROM mysql.user WHERE User='guest';
 DELETE FROM mysql.user WHERE User='';
@@ -257,13 +267,13 @@ Server: Apache
 
 $ sudo grep -iE "db_user|db_password" /var/www/dvwa/config/config.inc.php
 $_DVWA[ 'db_user' ] = 'dvwa';
-$_DVWA[ 'db_password' ] = '<MDP_DVWA>';
+$_DVWA[ 'db_password' ] = 'Dvwa2026Secure';
 
 $ sudo grep -inE 'dbuser|dbpass' /var/www/mutillidae/config.inc
 5:    $dbuser = 'mutillidae';
-6:    $dbpass = '<MDP_MUTILLIDAE>';
+6:    $dbpass = 'Muti2026Secure';
 
-$ mysql -u root -p<MDP_ROOT> -e "SELECT User,Host FROM mysql.user;"
+$ mysql -u root -pRootStrong2026 -e "SELECT User,Host FROM mysql.user;"
 debian-sys-maint |
 dvwa             | localhost
 mutillidae       | localhost
