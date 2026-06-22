@@ -95,16 +95,22 @@ autorisée. OpenSSH 4.7 n'accepte que les algorithmes ssh-rsa et ssh-dss.
 Une clé RSA est générée sur le poste d'administration (ed25519 non
 supporté par OpenSSH 4.7) et déposée dans `~/.ssh/authorized_keys`. 
 
+Création du fichier ssh qur le poste admin : 
+
+```bash
+
+```
+
 Génération de la clé sur le poste Administrateur : 
 
 ```bash
-ssh-keygen -t rsa -b 2048 -f ~/.ssh/id_rsa_metasploitable
+ssh-keygen -t rsa -b 2048 -f "$HOME\.ssh\id_rsa_metasploitable"
 ```
 
-Envoie de la paire de clé vers la machine virtuelle :
+Envoie de la paire de clé vers le serveur virtuelle :
 
 ```bash
-ssh-copy-id -o HostKeyAlgorithms=+ssh-rsa -i ~/.ssh/id_rsa_metasploitable.pub msfadmin@192.168.58.128
+cat "$HOME\.ssh\id_rsa_metasploitable.pub" | ssh -o HostKeyAlgorithms=+ssh-rsa msfadmin@192.168.58.128 "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys && chmod 700 ~/.ssh && chmod 600 ~/.ssh/authorized_keys"
 ```
 
 La configuration serveur est réécrite par suppression des directives existantes puis ajout d'un bloc unique (sed -r, requis sur Ubuntu 8.04).
