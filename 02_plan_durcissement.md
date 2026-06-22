@@ -107,7 +107,7 @@ Génération de la clé sur le poste Administrateur :
 ssh-keygen -t rsa -b 2048 -f "$HOME\.ssh\id_rsa_metasploitable"
 ```
 
-Envoie de la paire de clé vers le serveur virtuelle :
+Envoie de la paire de clé vers le serveur virtuelle (modifier l'ip avec celui de votre serveur) :
 
 ```bash
 cat "$HOME\.ssh\id_rsa_metasploitable.pub" | ssh -o HostKeyAlgorithms=+ssh-rsa msfadmin@192.168.58.128 "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys && chmod 700 ~/.ssh && chmod 600 ~/.ssh/authorized_keys"
