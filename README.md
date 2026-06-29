@@ -1,4 +1,3 @@
----
 **Sécurité des systèmes d'exploitation et des réseaux**
 
 # Travail pratique n° 3
@@ -8,7 +7,7 @@
 |---|---|
 | **Système cible** | Metasploitable 2 (Ubuntu 8.04 LTS) |
 | **Document** | Note de synthèse |
-| **Auteur** | Prénom NOM |
+| **Auteur** | Raian Remir |
 | **Date** | Juin 2026 |
 | **Version** | 1.0 |
 | **Diffusion** | Usage pédagogique — réseau isolé |
@@ -24,10 +23,6 @@ délibérément vulnérables, DVWA et Mutillidae, qui doivent demeurer fonctionn
 La machine étant volontairement vulnérable et hébergeant des portes dérobées
 actives, son utilisation est strictement réservée à un réseau isolé (hôte seul ou
 NAT). Les mots de passe figurant dans ce dossier sont des valeurs de remplacement.
-L'objectif n'est pas de corriger l'ensemble des vulnérabilités — ce qui n'est ni
-réalisable (système en fin de vie, applications vulnérables par conception) ni
-demandé — mais de réduire la surface d'attaque et de durcir le système en cohérence
-avec son rôle.
 
 ## 2. Contexte technique
 
