@@ -365,7 +365,7 @@ PS> Test-NetConnection <ip_de_la_machine> -Port 80     # Apache
 TcpTestSucceeded : True
 
 # Applications toujours servies
-$ curl -s -o /dev/null -w "%{http_code}\n" http://<ip_de_la_machine>/dvwa/
+$ curl -s -o /dev/null -w "%{http_code}\n" -L http://<ip_de_la_machine>/dvwa/
 200
 ```
 
