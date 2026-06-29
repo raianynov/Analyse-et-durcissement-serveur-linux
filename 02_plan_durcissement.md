@@ -1,11 +1,39 @@
-# Partie 2 — Plan de durcissement
+**Sécurité des systèmes d'exploitation et des réseaux**
+
+# Travail pratique n° 3
+## Analyse et durcissement d'un serveur Linux
+
+| | |
+|---|---|
+| **Système cible** | Metasploitable 2 (Ubuntu 8.04 LTS) |
+| **Document** | Partie 2 — Plan de durcissement |
+| **Auteur** | Raian Remir |
+| **Date** | Juin 2026 |
+| **Version** | 1.0 |
+| **Diffusion** | Usage pédagogique — réseau isolé |
+
+---
+
+## Sommaire
+
+1. Neutralisation des portes dérobées
+2. Suppression des services superflus
+3. Restriction de MySQL à l'écoute locale
+4. Durcissement de l'authentification SSH
+5. Filtrage réseau (pare-feu)
+6. Application du moindre privilège
+7. Durcissement des services exposés
+8. Sécurisation du système de fichiers
+9. Validation finale et synthèse
+
+---
 
 Chaque mesure suit la structure : état initial, mesures appliquées, vérification
 (avec la sortie réelle relevée), état final. La cible est Ubuntu 8.04 (SysVinit,
 xinetd et inetd, iptables). Avant toute action, un instantané de la machine virtuelle
 est réalisé ; après chaque étape, le fonctionnement de DVWA et de Mutillidae est
 contrôlé. L'accès s'effectue par `ssh -o HostKeyAlgorithms=+ssh-rsa msfadmin@192.168.58.128`
-ou par la console de la machine virtuelle.
+ou par la console de la machine virtuelle. Les mots de passe indiqués sont des placeholders (<MDP_DVWA>, <MDP_MUTILLIDAE>, <MDP_ROOT>) à remplacer par des mots de passe forts, sans le caractère "!".
 
 ## Thème 1 — Neutralisation des backdoors
 
@@ -240,18 +268,18 @@ repointées avant la sécurisation de root. Sur Metasploitable, root est défini
 root@'%' : le mot de passe est modifié par UPDATE puis l'hôte restreint à local.
 ```bash
 mysql -u root << 'SQL'
-GRANT ALL PRIVILEGES ON dvwa.* TO 'dvwa'@'localhost' IDENTIFIED BY 'Dvwa2026Secure';
-GRANT ALL PRIVILEGES ON metasploit.* TO 'mutillidae'@'localhost' IDENTIFIED BY 'Muti2026Secure';
+GRANT ALL PRIVILEGES ON dvwa.* TO 'dvwa'@'localhost' IDENTIFIED BY '<MDP_DVWA>';
+GRANT ALL PRIVILEGES ON metasploit.* TO 'mutillidae'@'localhost' IDENTIFIED BY '<MDP_MUTILLIDAE>';
 FLUSH PRIVILEGES;
 SQL
 
 sudo sed -i "s/\$_DVWA\[ 'db_user' \] *= *'root'/\$_DVWA[ 'db_user' ] = 'dvwa'/" /var/www/dvwa/config/config.inc.php
-sudo sed -i "s/\$_DVWA\[ 'db_password' \] *= *''/\$_DVWA[ 'db_password' ] = 'Dvwa2026Secure'/" /var/www/dvwa/config/config.inc.php
+sudo sed -i "s/\$_DVWA\[ 'db_password' \] *= *''/\$_DVWA[ 'db_password' ] = '<MDP_DVWA>'/" /var/www/dvwa/config/config.inc.php
 sudo sed -i "s/\$dbuser *= *'root'/\$dbuser = 'mutillidae'/" /var/www/mutillidae/config.inc
-sudo sed -i "s/\$dbpass *= *''/\$dbpass = 'Muti2026Secure'/" /var/www/mutillidae/config.inc
+sudo sed -i "s/\$dbpass *= *''/\$dbpass = '<MDP_MUTILLIDAE>'/" /var/www/mutillidae/config.inc
 
 mysql -u root << 'SQL'
-UPDATE mysql.user SET Password=PASSWORD('RootStrong2026') WHERE User='root';
+UPDATE mysql.user SET Password=PASSWORD('<MDP_ROOT>') WHERE User='root';
 UPDATE mysql.user SET Host='localhost' WHERE User='root' AND Host='%';
 DELETE FROM mysql.user WHERE User='guest';
 DELETE FROM mysql.user WHERE User='';
@@ -267,13 +295,13 @@ Server: Apache
 
 $ sudo grep -iE "db_user|db_password" /var/www/dvwa/config/config.inc.php
 $_DVWA[ 'db_user' ] = 'dvwa';
-$_DVWA[ 'db_password' ] = 'Dvwa2026Secure';
+$_DVWA[ 'db_password' ] = '<MDP_DVWA>';
 
 $ sudo grep -inE 'dbuser|dbpass' /var/www/mutillidae/config.inc
 5:    $dbuser = 'mutillidae';
-6:    $dbpass = 'Muti2026Secure';
+6:    $dbpass = '<MDP_MUTILLIDAE>';
 
-$ mysql -u root -pRootStrong2026 -e "SELECT User,Host FROM mysql.user;"
+$ mysql -u root -p<MDP_ROOT> -e "SELECT User,Host FROM mysql.user;"
 debian-sys-maint |
 dvwa             | localhost
 mutillidae       | localhost
@@ -308,6 +336,42 @@ tmpfs on /tmp type tmpfs (rw,noexec,nosuid,nodev)
 
 **État final.** Exécution et bit SUID interdits dans /tmp, fichiers sensibles
 protégés, inventaire SUID établi.
+
+## Validation finale de l'état du système
+
+Après application des huit thèmes, une vérification globale confirme la cohérence de
+l'état final : seuls les trois services nécessaires sont exposés (dont MySQL en
+écoute locale uniquement), le pare-feu applique sa politique DROP, SSH est restreint
+à la clé, et les deux applications restent fonctionnelles.
+
+```
+$ sudo netstat -tulpn
+tcp   127.0.0.1:3306   LISTEN  mysqld     (MySQL, local uniquement)
+tcp   0.0.0.0:80       LISTEN  apache2    (Apache, metier)
+tcp6  :::22            LISTEN  sshd       (SSH, filtre 192.168.58.0/24)
+
+$ sudo iptables -L -n | grep policy
+Chain INPUT (policy DROP)
+Chain FORWARD (policy DROP)
+Chain OUTPUT (policy ACCEPT)
+
+# Depuis le poste d'administration : ports non metier injoignables
+PS> Test-NetConnection 192.168.58.128 -Port 1524   # ingreslock (backdoor)
+TcpTestSucceeded : False
+PS> Test-NetConnection 192.168.58.128 -Port 3306   # MySQL
+TcpTestSucceeded : False
+PS> Test-NetConnection 192.168.58.128 -Port 80     # Apache
+TcpTestSucceeded : True
+
+# Applications toujours servies
+$ curl -s -o /dev/null -w "%{http_code}\n" http://192.168.58.128/dvwa/
+200
+```
+
+Cette validation synthétise l'aboutissement du durcissement : sur environ vingt-cinq
+ports initiaux, trois services nécessaires subsistent, MySQL n'est plus exposé au
+réseau, les backdoors ne répondent plus, et DVWA comme Mutillidae restent
+accessibles.
 
 ## Récapitulatif
 
