@@ -57,7 +57,7 @@ sudo /etc/init.d/xinetd restart
 $ sudo netstat -tulpn | grep -E ':21 |:23 |:1099|:1524|:5900|:6000|:6667|:6697|:8787'
 (aucune ligne)
 
-PS> Test-NetConnection <ip_de_la_machine> -Port 1524
+PS> Test-NetConnection <ip_du_serveur> -Port 1524
 TcpTestSucceeded : False
 ```
 
@@ -107,7 +107,7 @@ sudo /etc/init.d/mysql restart
 $ sudo netstat -tulpn | grep 3306
 tcp   127.0.0.1:3306   LISTEN  mysqld
 
-PS> Test-NetConnection <ip_de_la_machine> -Port 3306
+PS> Test-NetConnection <ip_du_serveur> -Port 3306
 TcpTestSucceeded : False
 ```
 DVWA et Mutillidae restent fonctionnelles (connexion MySQL locale).
@@ -130,7 +130,7 @@ ssh-keygen -t rsa -b 2048 -f $env:USERPROFILE\.ssh\msf_rsa
 Raccourci de connexion dans `%USERPROFILE%\.ssh\config` :
 ```
 Host msf
-    HostName <ip_de_la_machine>
+    HostName <ip_du_serveur>
     User msfadmin
     HostKeyAlgorithms +ssh-rsa
     PubkeyAcceptedAlgorithms +ssh-rsa
@@ -185,7 +185,7 @@ sudo iptables -F
 sudo iptables -A INPUT -i lo -j ACCEPT
 sudo iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
 sudo iptables -A INPUT -p icmp -j ACCEPT
-sudo iptables -A INPUT -p tcp -s <ip_reseau_de_la_machine>/24 --dport 22 -j ACCEPT
+sudo iptables -A INPUT -p tcp -s <ip_du_reseau>/24 --dport 22 -j ACCEPT
 sudo iptables -A INPUT -p tcp --dport 80 -j ACCEPT
 sudo iptables -P INPUT DROP
 sudo iptables -P FORWARD DROP
@@ -201,7 +201,7 @@ Chain INPUT (policy DROP)
   ACCEPT all  -- lo
   ACCEPT all  -- state RELATED,ESTABLISHED
   ACCEPT icmp
-  ACCEPT tcp  -- <ip_reseau_de_la_machine>/24   tcp dpt:22
+  ACCEPT tcp  -- <ip_du_reseau>/24   tcp dpt:22
   ACCEPT tcp  --                   tcp dpt:80
 Chain FORWARD (policy DROP)
 Chain OUTPUT (policy ACCEPT)
@@ -357,11 +357,11 @@ Chain FORWARD (policy DROP)
 Chain OUTPUT (policy ACCEPT)
 
 # Depuis le poste d'administration : ports non metier injoignables
-PS> Test-NetConnection <ip_de_la_machine> -Port 1524   # ingreslock (backdoor)
+PS> Test-NetConnection <ip_du_serveur> -Port 1524   # ingreslock (backdoor)
 TcpTestSucceeded : False
-PS> Test-NetConnection <ip_de_la_machine> -Port 3306   # MySQL
+PS> Test-NetConnection <ip_du_serveur> -Port 3306   # MySQL
 TcpTestSucceeded : False
-PS> Test-NetConnection <ip_de_la_machine> -Port 80     # Apache
+PS> Test-NetConnection <ip_du_serveur> -Port 80     # Apache
 TcpTestSucceeded : True
 
 # Applications toujours servies
