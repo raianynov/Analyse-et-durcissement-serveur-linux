@@ -349,6 +349,7 @@ $ sudo netstat -tulpn
 tcp   127.0.0.1:3306   LISTEN  mysqld     (MySQL, local uniquement)
 tcp   0.0.0.0:80       LISTEN  apache2    (Apache, metier)
 tcp6  :::22            LISTEN  sshd       (SSH, filtre <ip_reseau_de_la_machine>/24)
+udp   0 0.0.0.0:68     LISTEN  dhclient   (service dhcp)
 
 $ sudo iptables -L -n | grep policy
 Chain INPUT (policy DROP)
