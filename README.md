@@ -1,54 +1,74 @@
-# TP3 — Durcissement d'un serveur Linux (Metasploitable 2)
+---
+**Sécurité des systèmes d'exploitation et des réseaux**
 
-Analyse de la surface d'attaque et durcissement d'une machine Metasploitable 2
-(Ubuntu 8.04) hébergeant deux applications web volontairement vulnérables, DVWA et
-Mutillidae, qui doivent rester fonctionnelles.
+# Travail pratique n° 3
+## Analyse et durcissement d'un serveur Linux
 
-La machine étant délibérément vulnérable et hébergeant des backdoors actives, elle
-ne doit être utilisée que sur un réseau isolé (Host-only ou NAT). Les mots de passe
-de ce dépôt sont des placeholders. L'objectif n'est pas de corriger l'ensemble des
-vulnérabilités, ce qui n'est ni possible (système en fin de vie, applications
-vulnérables par conception) ni demandé, mais de réduire la surface d'attaque et de
-durcir le système en cohérence avec son rôle.
-
-## Contexte technique
-
-Ubuntu 8.04 fonctionne avec SysVinit, xinetd et inetd (service, update-rc.d,
-/etc/xinetd.d, /etc/inetd.conf). Le pare-feu repose sur iptables, le noyau étant
-antérieur à nftables. L'énumération s'effectue avec netstat et ifconfig. Les dépôts
-APT étant fermés, les composants ne sont pas corrigeables ; la migration vers un
-système supporté constitue la correction de fond.
-
-## Structure du dépôt
-
-| Fichier | Description |
+| | |
 |---|---|
-| [01_analyse.md](01_analyse.md) | Cartographie du système et analyse de la surface d'attaque |
-| [02_plan_durcissement.md](02_plan_durcissement.md) | Plan de durcissement (état initial, mesures, vérification, état final) |
-| [diagrams/](diagrams/) | Sources Mermaid des schémas |
+| **Système cible** | Metasploitable 2 (Ubuntu 8.04 LTS) |
+| **Document** | Note de synthèse |
+| **Auteur** | Prénom NOM |
+| **Date** | Juin 2026 |
+| **Version** | 1.0 |
+| **Diffusion** | Usage pédagogique — réseau isolé |
 
-## Mesures appliquées
+---
 
-| Thème | Mesure | Impact métier |
+## 1. Objet du document
+
+Ce dossier présente l'analyse de la surface d'attaque et le durcissement d'une
+machine **Metasploitable 2** (Ubuntu 8.04 LTS) hébergeant deux applications web
+délibérément vulnérables, DVWA et Mutillidae, qui doivent demeurer fonctionnelles.
+
+La machine étant volontairement vulnérable et hébergeant des portes dérobées
+actives, son utilisation est strictement réservée à un réseau isolé (hôte seul ou
+NAT). Les mots de passe figurant dans ce dossier sont des valeurs de remplacement.
+L'objectif n'est pas de corriger l'ensemble des vulnérabilités — ce qui n'est ni
+réalisable (système en fin de vie, applications vulnérables par conception) ni
+demandé — mais de réduire la surface d'attaque et de durcir le système en cohérence
+avec son rôle.
+
+## 2. Contexte technique
+
+Ubuntu 8.04 repose sur SysVinit, complété par xinetd et inetd (commandes `service`,
+`update-rc.d`, fichiers `/etc/xinetd.d`, `/etc/inetd.conf`). Le pare-feu repose sur
+iptables, le noyau étant antérieur à nftables. L'énumération s'effectue avec
+`netstat` et `ifconfig`. Les dépôts APT étant fermés, les composants ne sont pas
+corrigeables ; la migration vers un système supporté constitue la correction de
+fond.
+
+## 3. Composition du dossier
+
+| Élément | Description |
+|---|---|
+| `01_analyse.md` | Cartographie du système et analyse de la surface d'attaque |
+| `02_plan_durcissement.md` | Plan de durcissement (état initial, mesures, vérification, état final) |
+| `diagrams/` | Sources des schémas au format Mermaid |
+| `captures/` | Captures d'écran (preuves visuelles) et guide d'acquisition |
+
+## 4. Synthèse des mesures appliquées
+
+| N° | Mesure | Incidence sur le service |
 |---|---|---|
-| 1 | Neutralisation des backdoors (ingreslock, UnrealIRCd, RMI, DRb, vsftpd) | aucun |
-| 2 | Suppression des services inutiles (Samba, NFS, BIND, PostgreSQL, Tomcat, distccd, ProFTPD, Postfix) | aucun |
-| 3 | MySQL restreint à l'écoute locale (127.0.0.1) | aucun |
-| 4 | SSH par clé, root interdit, SSHv2 | administration par clé |
-| 5 | Pare-feu iptables, politique DROP (80 et 22 restreint) | aucun |
-| 6 | Mot de passe par défaut changé, comptes faibles verrouillés | aucun |
-| 7 | Apache et MySQL durcis, comptes applicatifs dédiés | applications préservées |
-| 8 | /tmp durci, droits sensibles restreints | aucun |
+| 1 | Neutralisation des portes dérobées (ingreslock, UnrealIRCd, Java RMI, Ruby DRb, vsftpd) | Aucune |
+| 2 | Suppression des services superflus (Samba, NFS, BIND, PostgreSQL, Tomcat, distcc, ProFTPD, Postfix) | Aucune |
+| 3 | Restriction de MySQL à l'écoute locale (127.0.0.1) | Aucune |
+| 4 | Authentification SSH par clé, interdiction du superutilisateur, SSHv2 imposé | Administration par clé |
+| 5 | Pare-feu iptables, politique de rejet par défaut (80 ouvert, 22 restreint) | Aucune |
+| 6 | Changement du mot de passe par défaut, verrouillage des comptes faibles | Aucune |
+| 7 | Durcissement d'Apache et de MySQL, comptes applicatifs dédiés | Applications préservées |
+| 8 | Durcissement de /tmp, restriction des droits sensibles | Aucune |
 
-La surface d'attaque passe d'environ vingt-cinq services exposés, dont cinq
-backdoors root, à trois services nécessaires durcis, DVWA et Mutillidae restant
-fonctionnelles.
+La surface d'attaque passe d'environ vingt-cinq services exposés — dont cinq portes
+dérobées donnant un accès *root* — à trois services nécessaires et durcis, DVWA et
+Mutillidae demeurant fonctionnelles.
 
-## Schémas
+## 5. Schémas
 
-Les sources éditables sont dans le dossier [diagrams/](diagrams/).
+Les sources éditables figurent dans le dossier `diagrams/`.
 
-### Services necessaires, inutiles et backdoors
+### 5.1 Services nécessaires, superflus et portes dérobées
 
 ```mermaid
 flowchart TB
@@ -80,7 +100,7 @@ flowchart TB
     end
 ```
 
-### Ports exposes avant et apres durcissement
+### 5.2 Ports exposés avant et après durcissement
 
 ```mermaid
 flowchart LR
@@ -109,7 +129,7 @@ flowchart LR
     NET -->|"iptables : politique DROP"| AFTER
 ```
 
-### Flux d'une requete apres durcissement
+### 5.3 Flux d'une requête après durcissement
 
 ```mermaid
 sequenceDiagram
@@ -131,7 +151,15 @@ sequenceDiagram
     Note over DB: MySQL non exposé au réseau<br/>(écoute 127.0.0.1 uniquement)
 ```
 
-## Auteur
+## 6. Périmètre et limites
 
-Raian Remir — TP3 Sécurité des OS et des réseaux
+Metasploitable 2 repose sur Ubuntu 8.04, en fin de vie : les dépôts APT sont fermés
+et les composants (Apache, PHP, MySQL) ne sont pas corrigeables. La suppression de
+l'ensemble des vulnérabilités n'est pas l'objet de ce travail — les applications
+devant rester vulnérables et fonctionnelles — et n'est de toute façon pas atteignable
+sur cette base. La correction de fond des versions relève d'une migration vers un
+système supporté, qui constitue la recommandation principale.
 
+---
+*Document rédigé dans le cadre du module Sécurité des systèmes d'exploitation et des
+réseaux.*
