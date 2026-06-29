@@ -155,6 +155,3 @@ devant rester vulnérables et fonctionnelles — et n'est de toute façon pas at
 sur cette base. La correction de fond des versions relève d'une migration vers un
 système supporté, qui constitue la recommandation principale.
 
----
-*Document rédigé dans le cadre du module Sécurité des systèmes d'exploitation et des
-réseaux.*
