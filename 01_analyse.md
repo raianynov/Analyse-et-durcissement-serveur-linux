@@ -1,4 +1,30 @@
-# Partie 1 — Analyse du système
+---
+**Sécurité des systèmes d'exploitation et des réseaux**
+
+# Travail pratique n° 3
+## Analyse et durcissement d'un serveur Linux
+
+| | |
+|---|---|
+| **Système cible** | Metasploitable 2 (Ubuntu 8.04 LTS) |
+| **Document** | Partie 1 — Analyse du système |
+| **Auteur** | Prénom NOM |
+| **Date** | Juin 2026 |
+| **Version** | 1.0 |
+| **Diffusion** | Usage pédagogique — réseau isolé |
+
+---
+
+## Sommaire
+
+1. Fonction métier
+2. Identification du système
+3. Cartographie des ports et services
+4. Dépendances applicatives
+5. Analyse de la surface d'attaque
+6. Périmètre et limites
+
+---
 
 ## 1. Fonction métier
 
