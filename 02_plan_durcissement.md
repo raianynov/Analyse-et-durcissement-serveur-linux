@@ -57,7 +57,7 @@ sudo /etc/init.d/xinetd restart
 $ sudo netstat -tulpn | grep -E ':21 |:23 |:1099|:1524|:5900|:6000|:6667|:6697|:8787'
 (aucune ligne)
 
-PS> Test-NetConnection 192.168.58.128 -Port 1524
+PS> Test-NetConnection <ip_de_la_machine> -Port 1524
 TcpTestSucceeded : False
 ```
 
@@ -107,7 +107,7 @@ sudo /etc/init.d/mysql restart
 $ sudo netstat -tulpn | grep 3306
 tcp   127.0.0.1:3306   LISTEN  mysqld
 
-PS> Test-NetConnection 192.168.58.128 -Port 3306
+PS> Test-NetConnection <ip_de_la_machine> -Port 3306
 TcpTestSucceeded : False
 ```
 DVWA et Mutillidae restent fonctionnelles (connexion MySQL locale).
@@ -130,7 +130,7 @@ ssh-keygen -t rsa -b 2048 -f $env:USERPROFILE\.ssh\msf_rsa
 Raccourci de connexion dans `%USERPROFILE%\.ssh\config` :
 ```
 Host msf
-    HostName 192.168.58.128
+    HostName <ip_de_la_machine>
     User msfadmin
     HostKeyAlgorithms +ssh-rsa
     PubkeyAcceptedAlgorithms +ssh-rsa
@@ -185,7 +185,7 @@ sudo iptables -F
 sudo iptables -A INPUT -i lo -j ACCEPT
 sudo iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
 sudo iptables -A INPUT -p icmp -j ACCEPT
-sudo iptables -A INPUT -p tcp -s 192.168.58.0/24 --dport 22 -j ACCEPT
+sudo iptables -A INPUT -p tcp -s <ip_reseau_de_la_machine>/24 --dport 22 -j ACCEPT
 sudo iptables -A INPUT -p tcp --dport 80 -j ACCEPT
 sudo iptables -P INPUT DROP
 sudo iptables -P FORWARD DROP
@@ -201,7 +201,7 @@ Chain INPUT (policy DROP)
   ACCEPT all  -- lo
   ACCEPT all  -- state RELATED,ESTABLISHED
   ACCEPT icmp
-  ACCEPT tcp  -- 192.168.58.0/24   tcp dpt:22
+  ACCEPT tcp  -- <ip_reseau_de_la_machine>/24   tcp dpt:22
   ACCEPT tcp  --                   tcp dpt:80
 Chain FORWARD (policy DROP)
 Chain OUTPUT (policy ACCEPT)
@@ -209,7 +209,7 @@ Chain OUTPUT (policy ACCEPT)
 SSH et applications toujours fonctionnels.
 
 **État final.** Politique DROP par défaut ; seuls les ports 80 (réseau) et 22
-(depuis 192.168.58.0/24) sont autorisés ; règles rechargées au démarrage.
+(depuis l'ip réseau de la machine) sont autorisés ; règles rechargées au démarrage.
 
 ## Thème 6 — Moindre privilège
 
@@ -348,7 +348,7 @@ l'état final : seuls les trois services nécessaires sont exposés (dont MySQL 
 $ sudo netstat -tulpn
 tcp   127.0.0.1:3306   LISTEN  mysqld     (MySQL, local uniquement)
 tcp   0.0.0.0:80       LISTEN  apache2    (Apache, metier)
-tcp6  :::22            LISTEN  sshd       (SSH, filtre 192.168.58.0/24)
+tcp6  :::22            LISTEN  sshd       (SSH, filtre <ip_reseau_de_la_machine>/24)
 
 $ sudo iptables -L -n | grep policy
 Chain INPUT (policy DROP)
@@ -356,15 +356,15 @@ Chain FORWARD (policy DROP)
 Chain OUTPUT (policy ACCEPT)
 
 # Depuis le poste d'administration : ports non metier injoignables
-PS> Test-NetConnection 192.168.58.128 -Port 1524   # ingreslock (backdoor)
+PS> Test-NetConnection <ip_de_la_machine> -Port 1524   # ingreslock (backdoor)
 TcpTestSucceeded : False
-PS> Test-NetConnection 192.168.58.128 -Port 3306   # MySQL
+PS> Test-NetConnection <ip_de_la_machine> -Port 3306   # MySQL
 TcpTestSucceeded : False
-PS> Test-NetConnection 192.168.58.128 -Port 80     # Apache
+PS> Test-NetConnection <ip_de_la_machine> -Port 80     # Apache
 TcpTestSucceeded : True
 
 # Applications toujours servies
-$ curl -s -o /dev/null -w "%{http_code}\n" http://192.168.58.128/dvwa/
+$ curl -s -o /dev/null -w "%{http_code}\n" http://<ip_de_la_machine>/dvwa/
 200
 ```
 
