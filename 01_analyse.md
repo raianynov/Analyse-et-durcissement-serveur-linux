@@ -1,4 +1,3 @@
----
 **Sécurité des systèmes d'exploitation et des réseaux**
 
 # Travail pratique n° 3
@@ -8,7 +7,7 @@
 |---|---|
 | **Système cible** | Metasploitable 2 (Ubuntu 8.04 LTS) |
 | **Document** | Partie 1 — Analyse du système |
-| **Auteur** | Prénom NOM |
+| **Auteur** | Raian Remir |
 | **Date** | Juin 2026 |
 | **Version** | 1.0 |
 | **Diffusion** | Usage pédagogique — réseau isolé |
